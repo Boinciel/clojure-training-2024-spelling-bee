@@ -4,7 +4,8 @@
    [clojure.set :as set]
    [clojure.string :as str]
    [re-frame.core :as rf]
-   [reagent.dom :as rdom]))
+   [reagent.dom :as rdom]
+   [clojure.string :as string]))
 
 (def debug?
   ^boolean goog.DEBUG)
@@ -18,6 +19,7 @@
    :common-letter #{}
    :letters       #{}
    :found-words   #{}
+   :current-input ""
    :message       ""})
 
 
@@ -49,13 +51,18 @@
 
 (defn word-validity-case [word letters common-letter]
   (cond
-    (contains? word-collection word)     :submit-ok       ; first check if the word is in the word-collection
-    (< 4 (count (seq word)))             :too-short       ; check length, notify if less than 3 letters
-    (not (every? letters (set word)))    :invalid         ; check if every letter in the word is in letters set
-    (contains? (set word) common-letter) :not-in-list     ; then check if the word at least contains common letter 
-    :else                                :no-common))     ; if it does not contain the common letter
+    (contains? word-collection word)                   :submit-ok       ; first check if the word is in the word-collection
+    (> 4 (count (seq word)))                           :too-short       ; check length, notify if less than 3 letters
+    (not (every? letters (set word)))                  :invalid         ; check if every letter in the word is in letters set 
+    (not (contains? (set word) (first common-letter))) :no-common       ; if it does not contain the common letter
+    (contains? (set word) (first common-letter))       :not-in-list     ; then check if the word at least contains common letter 
+    :else                                              :other))         ; generic if it somehow manages to not match one of the above
 
-
+(defn point-formula [word letters]
+  (cond
+    (= (get-unique-letter-collection word) (set letters)) (+ (count (seq word)) 7)
+    (= (count (seq word)) 4) (int 1)
+    :else (count (seq word))))
 
 ;---------- subscriptions to data from app state ----------
 
@@ -68,6 +75,26 @@
  ::words
   (fn [db]
     (:words db)))
+
+(rf/reg-sub
+ ::found-words
+  (fn [db]
+    (:found-words db)))
+
+(rf/reg-sub
+ ::common-letter
+  (fn [db]
+    (:common-letter db)))
+
+(rf/reg-sub
+ ::letters
+  (fn [db]
+    (:letters db)))
+
+(rf/reg-sub
+ ::current-input
+  (fn [db]
+    (:current-input db)))
 
 (rf/reg-sub
  ::message
@@ -94,39 +121,73 @@
            :common-letter (find-common-letter word-set)
            :letters (get-unique-letter-collection word-set))))
 
+(rf/reg-event-db ::update-current-input
+  (fn [db [_ input-value]]
+    (assoc db :current-input input-value)))
+
 (rf/reg-event-db ::submit-word
   (fn [db [_ word]]
     (let [letters       (:letters       db)
-          common-letter (:common-letter db)] 
+          common-letter (:common-letter db)
+          point-val     (point-formula word letters)]
       (case (word-validity-case word letters common-letter)
-       :submit-ok (do (update db :found-words conj word)
-                      (assoc  db :message     "Great job, you found " word " for " 0 "points!")) ; add the valid word to found words
-       :too-short (assoc  db :message     "Only words with 4 letters or more count.")
-       :not-in-list (assoc  db :message   "Sorry, " word " isn't in the word list today.")
-       :no-common (assoc  db :message     "Nice try, but the word needs to contain the common letter.")
-       :invalid   (assoc  db :message     "All letters in the word must be from the given letter set.")))))
+        :submit-ok   (-> db
+                         (update :found-words conj word)
+                         (assoc :message (str "Great job! You found " word ", worth a score of " point-val "!"))) ; add the valid word to found words
+        :too-short   (assoc  db :message "Only words with 4 letters or more count.")
+        :not-in-list (assoc  db :message (str "Sorry, " word " isn't in the word list today."))
+        :no-common   (assoc  db :message "Nice try, but the word needs to contain the common letter.")
+        :invalid     (assoc  db :message "All letters in the word must be from the given letter set.")
+        :other       (assoc  db :message "Try again.")))))
+
 
 ;---------- main page elements ----------
 
-(defn spawn-words-button []
+(defn spawn-words-button
+  "Starts the game with a set of words."
+  []
   [:button {:on-click #(rf/dispatch  [::set-words-and-letters word-collection])}
    "Get Letters!"])
 
+(defn submit-button [word]
+  (let [input-value (rf/subscribe [::current-input])]
+    [:button {:on-click #(when (seq word)
+                           (println "click!")
+                           (rf/dispatch [::submit-word @input-value])
+                           (rf/dispatch [::update-current-input ""]))} ; clear input after submit
+     "Submit"]))
+(defn text-input []
+  (let [input-value (rf/subscribe [::current-input])]
+    [:input {:type         "text"
+             :placeholder  "Type here!"
+             :value        @input-value
+             :on-change    #(rf/dispatch [::update-current-input (-> % .-target .-value)])}]))
 
 
 ;---------- main page renderer ----------
 
 (defn main-panel []
-  (let [name (rf/subscribe  [::name])
-        words (rf/subscribe [::words])
-        database (rf/subscribe [::dbdb])]
+  (let [name          (rf/subscribe [::name])
+        words         (rf/subscribe [::words])
+        found-words   (rf/subscribe [::found-words])
+        common-letter (rf/subscribe [::common-letter])
+        letters       (rf/subscribe [::letters])
+        current-input (rf/subscribe [::current-input])
+        message       (rf/subscribe [::message])
+        database      (rf/subscribe [::dbdb])]
     [:div
      [:h1
-      "Hello from " @name]
+      "Hello, " @name]
      [spawn-words-button]
-     [:h2
+     [:h3
       "Here are the words you have found:"]
-     [:p "test: here are the answer words: " @words]
+     [:p (str/join ", " (sort @found-words))]
+     [text-input]
+     [submit-button @current-input] 
+     [:h3 @message]
+     [:p "Common Letter: " (str (first @common-letter))]
+     [:p "Available Letters: " (str/join ", " @letters)]
+     
      [:p "debug: db: " @database]]))
 
 
