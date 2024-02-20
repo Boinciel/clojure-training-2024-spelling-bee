@@ -133,6 +133,10 @@
   (fn [db [_ input-value]]
     (assoc db :current-input input-value)))
 
+(rf/reg-event-db ::shuffle-letter-order
+  (fn [db [_ display-letters]]
+    (assoc db :display-letters (shuffle display-letters))))
+
 (rf/reg-event-db ::submit-word
   (fn [db [_ word]]
     (let [letters       (:letters       db)
@@ -152,25 +156,34 @@
 ;---------- main page elements ----------
 
 (defn spawn-words-button
-  "Starts the game with a set of words."
+  "Starts the game with a preset set of words."
   []
   [:button {:on-click #(rf/dispatch  [::set-words-and-letters word-collection])}
    "Get Letters!"])
 
-(defn submit-button [word]
+(defn submit-button 
+  [word]
   (let [input-value (rf/subscribe [::current-input])]
     [:button {:on-click #(when (seq word)
                            (println "click!")
                            (rf/dispatch [::submit-word @input-value])
                            (rf/dispatch [::update-current-input ""]))} ; clear input after submit
      "Submit"]))
-(defn text-input []
+
+(defn text-input
+  "Field for the user to input a word of their choosing."
+  []
   (let [input-value (rf/subscribe [::current-input])]
     [:input {:type         "text"
              :placeholder  "Type here!"
              :value        @input-value
              :on-change    #(rf/dispatch [::update-current-input (-> % .-target .-value)])}]))
 
+(defn shuffle-order-button
+  "Shuffles the order of the letters displayed."
+  [display-letters]
+  [:button {:on-click #(rf/dispatch  [::shuffle-letter-order display-letters])}
+   "Shuffle letters"])
 
 ;---------- main page renderer ----------
 
@@ -196,7 +209,7 @@
      [:h3 @message]
      [:p "Common Letter: " (str (first @common-letter))]
      [:p "Other Letters: " (str/join ", " @display-letters)]
-     
+     [shuffle-order-button @display-letters]
      [:p "debug: db: " @database]
      ]))
 
