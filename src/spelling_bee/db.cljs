@@ -1,4 +1,8 @@
 (ns spelling-bee.db)
 
 (def default-db
-  {:words {}})
+  {:name          "default"
+   :words         #{}
+   :common-letter #{}
+   :letters       #{}
+   :egg {}})

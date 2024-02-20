@@ -17,3 +17,5 @@
 # shadow-cljs cache, port files
 /.shadow-cljs/
 
+/*-calva-repl
+/*.transit.json

@@ -11,3 +11,8 @@
  ::words
   (fn [db]
     (:words db)))
+
+(rf/reg-sub
+ ::dbdb
+  (fn [db]
+    db))
