@@ -3,6 +3,7 @@
 /target/
 /*-init.clj
 /*.log
+/.calva/
 
 # Leiningen
 /.lein-*
@@ -13,3 +14,4 @@
 
 # shadow-cljs cache, port files
 /.shadow-cljs/
+
