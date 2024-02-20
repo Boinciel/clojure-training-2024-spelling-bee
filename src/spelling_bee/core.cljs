@@ -14,13 +14,14 @@
 ;---------- our app state atom ----------
 
 (def default-db
-  {:name          "default"
-   :words         #{}
-   :common-letter #{}
-   :letters       #{}
-   :found-words   #{}
-   :current-input ""
-   :message       ""})
+  {:name              "default"
+   :words             #{}
+   :common-letter     #{}
+   :letters           #{}
+   :display-letters   []
+   :found-words       #{}
+   :current-input     ""
+   :message           ""})
 
 
 
@@ -90,6 +91,10 @@
  ::letters
   (fn [db]
     (:letters db)))
+(rf/reg-sub
+ ::display-letters
+  (fn [db]
+    (:display-letters db)))
 
 (rf/reg-sub
  ::current-input
@@ -117,9 +122,12 @@
 
 (rf/reg-event-db ::set-words-and-letters
   (fn [db [_ word-set]]
-    (assoc db :words word-set
-           :common-letter (find-common-letter word-set)
-           :letters (get-unique-letter-collection word-set))))
+    (let [common-letter (find-common-letter word-set)
+          letter-coll   (get-unique-letter-collection word-set)]
+      (assoc db :words word-set
+             :common-letter   common-letter
+             :letters         letter-coll
+             :display-letters (shuffle (vec (remove common-letter letter-coll)))))))
 
 (rf/reg-event-db ::update-current-input
   (fn [db [_ input-value]]
@@ -167,14 +175,15 @@
 ;---------- main page renderer ----------
 
 (defn main-panel []
-  (let [name          (rf/subscribe [::name])
-        words         (rf/subscribe [::words])
-        found-words   (rf/subscribe [::found-words])
-        common-letter (rf/subscribe [::common-letter])
-        letters       (rf/subscribe [::letters])
-        current-input (rf/subscribe [::current-input])
-        message       (rf/subscribe [::message])
-        database      (rf/subscribe [::dbdb])]
+  (let [name            (rf/subscribe [::name])
+        words           (rf/subscribe [::words])
+        found-words     (rf/subscribe [::found-words])
+        common-letter   (rf/subscribe [::common-letter])
+        letters         (rf/subscribe [::letters])
+        display-letters (rf/subscribe [::display-letters])
+        current-input   (rf/subscribe [::current-input])
+        message         (rf/subscribe [::message])
+        database        (rf/subscribe [::dbdb])]
     [:div
      [:h1
       "Hello, " @name]
@@ -186,9 +195,10 @@
      [submit-button @current-input] 
      [:h3 @message]
      [:p "Common Letter: " (str (first @common-letter))]
-     [:p "Available Letters: " (str/join ", " @letters)]
+     [:p "Other Letters: " (str/join ", " @display-letters)]
      
-     [:p "debug: db: " @database]]))
+     [:p "debug: db: " @database]
+     ]))
 
 
 ;---------- page load parameters ----------
