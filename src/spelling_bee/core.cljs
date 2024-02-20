@@ -15,13 +15,15 @@
 
 (def default-db
   {:name              "default"
+   :game-started      false
    :words             #{}
    :common-letter     #{}
    :letters           #{}
    :display-letters   []
    :found-words       #{}
    :current-input     ""
-   :message           ""})
+   :message           ""
+   :score             0})
 
 
 
@@ -73,6 +75,11 @@
     (:name db)))
 
 (rf/reg-sub
+ ::game-started
+  (fn [db]
+    (:game-started db)))
+
+(rf/reg-sub
  ::words
   (fn [db]
     (:words db)))
@@ -91,6 +98,7 @@
  ::letters
   (fn [db]
     (:letters db)))
+
 (rf/reg-sub
  ::display-letters
   (fn [db]
@@ -105,6 +113,11 @@
  ::message
   (fn [db]
     (:message db)))
+
+(rf/reg-sub
+ ::score
+  (fn [db]
+    (:score db)))
 
 (rf/reg-sub
  ::dbdb
@@ -125,9 +138,10 @@
     (let [common-letter (find-common-letter word-set)
           letter-coll   (get-unique-letter-collection word-set)]
       (assoc db :words word-set
-             :common-letter   common-letter
-             :letters         letter-coll
-             :display-letters (shuffle (vec (remove common-letter letter-coll)))))))
+                :common-letter   common-letter
+                :letters         letter-coll
+                :display-letters (shuffle (vec (remove common-letter letter-coll)))
+                :game-started    true))))
 
 (rf/reg-event-db ::update-current-input
   (fn [db [_ input-value]]
@@ -143,9 +157,12 @@
           common-letter (:common-letter db)
           point-val     (point-formula word letters)]
       (case (word-validity-case word letters common-letter)
-        :submit-ok   (-> db
-                         (update :found-words conj word)
-                         (assoc :message (str "Great job! You found " word ", worth a score of " point-val "!"))) ; add the valid word to found words
+        :submit-ok   (if (contains? (:found-words db) word)
+                       (assoc db :message "You've already found that word!") 
+                         (-> db
+                             (update :found-words conj word)
+                             (update :score + point-val)
+                             (assoc  :message (str "Great job! You found " word ", worth a score of " point-val "!")))) ; add the valid word to found words
         :too-short   (assoc  db :message "Only words with 4 letters or more count.")
         :not-in-list (assoc  db :message (str "Sorry, " word " isn't in the word list today."))
         :no-common   (assoc  db :message "Nice try, but the word needs to contain the common letter.")
@@ -158,8 +175,10 @@
 (defn spawn-words-button
   "Starts the game with a preset set of words."
   []
-  [:button {:on-click #(rf/dispatch  [::set-words-and-letters word-collection])}
-   "Get Letters!"])
+  (let [game-started (rf/subscribe [::game-started])]
+    (when-not @game-started
+      [:button {:on-click #(rf/dispatch  [::set-words-and-letters word-collection])}
+       "Get Letters!"])))
 
 (defn submit-button 
   [word]
@@ -189,6 +208,7 @@
 
 (defn main-panel []
   (let [name            (rf/subscribe [::name])
+        game-started    (rf/subscribe [::game-started])
         words           (rf/subscribe [::words])
         found-words     (rf/subscribe [::found-words])
         common-letter   (rf/subscribe [::common-letter])
@@ -196,20 +216,26 @@
         display-letters (rf/subscribe [::display-letters])
         current-input   (rf/subscribe [::current-input])
         message         (rf/subscribe [::message])
+        score           (rf/subscribe [::score])
         database        (rf/subscribe [::dbdb])]
     [:div
      [:h1
       "Hello, " @name]
      [spawn-words-button]
-     [:h3
-      "Here are the words you have found:"]
-     [:p (str/join ", " (sort @found-words))]
-     [text-input]
-     [submit-button @current-input] 
-     [:h3 @message]
-     [:p "Common Letter: " (str (first @common-letter))]
-     [:p "Other Letters: " (str/join ", " @display-letters)]
-     [shuffle-order-button @display-letters]
+     (when @game-started
+       [:div
+        [:h3
+         "Here are the words you have found:"]
+        [:p (str/join ", " (sort @found-words))]
+        [text-input]
+        [submit-button @current-input] 
+        [:h3 @message]
+        [:p "Common Letter: " (str (first @common-letter))]
+        [:p "Other Letters: " (str/join ", " @display-letters)]
+        [shuffle-order-button @display-letters]
+        [:h3 "Your score: " @score]])
+     
+     
      [:p "debug: db: " @database]
      ]))
 
