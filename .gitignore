@@ -4,6 +4,8 @@
 /*-init.clj
 /*.log
 /.calva/
+/.calva
+/.clj-kondo
 
 # Leiningen
 /.lein-*
