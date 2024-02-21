@@ -144,9 +144,13 @@
                 :display-letters (shuffle (vec (remove common-letter letter-coll)))
                 :game-started    true))))
 
-(rf/reg-event-db ::update-current-input
+(rf/reg-event-db ::assoc-current-input
   (fn [db [_ input-value]]
     (assoc db :current-input input-value)))
+
+(rf/reg-event-db ::update-current-input
+  (fn [db [_ input-value]]
+    (update db :current-input str  input-value)))
 
 (rf/reg-event-db ::shuffle-letter-order
   (fn [db [_ display-letters]]
@@ -169,6 +173,15 @@
         :no-common   (assoc  db :message "Nice try, but the word needs to contain the common letter.")
         :invalid     (assoc  db :message "All letters in the word must be from the given letter set.")
         :other       (assoc  db :message "Try again.")))))
+
+
+
+;---------- handlers ----------
+
+(defn global-key-handler [e]
+  (let [key (.-key e)]
+    (when (re-matches #"[a-zA-Z]" key)
+      (rf/dispatch [::update-current-input (str key)]))))
 
 
 
@@ -218,6 +231,12 @@
    :justify-content "space-around"
    })
 
+(def body-background
+  {:background-image "url('/images/tokimemobgscroll.gif')"
+   :background-size "cover"
+   :background-position "center center"
+   :background-repeat "no-repeat"})
+
 
 
 ;---------- main page elements ----------
@@ -239,7 +258,7 @@
      {:on-click #(when (seq word)
                    (println "click!")
                    (rf/dispatch [::submit-word @input-value])
-                   (rf/dispatch [::update-current-input ""])) ; clear input after submit
+                   (rf/dispatch [::assoc-current-input ""])) ; clear input after submit
       :style button-style} 
      "Submit"]))
 
@@ -250,7 +269,7 @@
     [:input {:type         "text"
              :placeholder  "Type here!"
              :value        @input-value
-             :on-change    #(rf/dispatch [::update-current-input (-> % .-target .-value)])
+             :on-change    #(rf/dispatch [::assoc-current-input (-> % .-target .-value)])
              :style input-style}]))
 
 (defn shuffle-order-button
@@ -280,36 +299,37 @@
     [:html
      [:head
       [:title "Spelling Bee!"]
-    
+      
       [:style {:id "_stylefy-server-styles_"} "_stylefy-server-styles-content_"]
       [:style {:id "_stylefy-constant-styles_"}]
       [:style {:id "_stylefy-styles_"}]]
-    
-    [:div (use-style main-style)
-     [:h1
-      "Hello, " @name]
-     [:h3 @message]
-     [spawn-words-button]
-     (when @game-started 
-       [:div (use-style main-container-style)
-        [:div (use-style main-panel-style) 
-         [:div (use-style {:text-align "center"})
-          [text-input]
-          [submit-button @current-input]]
-
-         [:p "Common Letter: " (str (first @common-letter))]
-         [:p "Other Letters: " (str/join ", " @display-letters)]
-         [:div (use-style {:text-align "center"})
-          [shuffle-order-button @display-letters]]
-         [:h3 "Your score: " @score]]
-
-        [:div (use-style side-panel-style)
-         [:h3
-          "Found words:"]
-         [:ul (for [word (sort @found-words)]     ; sort found words into an alphabetical list
-                   [:li word])]]])
      
-     ]]))
+     [:div (use-style body-background)
+      [:div (use-style main-style)
+       [:h1
+        "Hello, " @name]
+       [:p "debug: "@database]
+       [:h3 @message]
+       [spawn-words-button]
+       (when @game-started 
+         [:div (use-style main-container-style)
+          [:div (use-style main-panel-style) 
+           [:div (use-style {:text-align "center"})
+            [text-input]
+            [submit-button @current-input]]
+
+           [:p "Common Letter: " (str (first @common-letter))]
+           [:p "Other Letters: " (str/join ", " @display-letters)]
+           [:div (use-style {:text-align "center"})
+            [shuffle-order-button @display-letters]]
+           [:h3 "Your score: " @score]]
+
+          [:div (use-style side-panel-style)
+           [:h3
+            "Found words:"]
+           [:ul (for [word (sort @found-words)]     ; sort found words into an alphabetical list
+                  [:li word])]]]) 
+       ]]]))
 
 
 ;---------- page load parameters ----------
@@ -324,8 +344,12 @@
     (rdom/unmount-component-at-node root-el)
     (rdom/render [main-panel] root-el)))
 
+(defn install-global-key-listeners []
+  (.addEventListener js/window "keypress" global-key-handler))
+
 (defn init []
-  (rf/dispatch-sync [::initialize-db])
-  (stylefy/init {:dom (stylefy-reagent/init)})
+  (install-global-key-listeners)               ; listen for keypress events
+  (rf/dispatch-sync [::initialize-db])         ; get re-frame atom initialized
+  (stylefy/init {:dom (stylefy-reagent/init)}) ; set up css
   (dev-setup)
   (mount-root))
