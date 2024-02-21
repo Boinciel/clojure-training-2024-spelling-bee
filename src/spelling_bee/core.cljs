@@ -15,7 +15,7 @@
 ;---------- our app state atom ----------
 
 (def default-db
-  {:name              "default"
+  {:name              "player"
    :game-started      false
    :words             #{}
    :common-letter     #{}
@@ -23,7 +23,7 @@
    :display-letters   []
    :found-words       #{}
    :current-input     ""
-   :message           ""
+   :message           "Welcome to the Spelling Bee!"
    :score             0})
 
 
@@ -174,17 +174,12 @@
 
 ;---------- stylefy components ----------
 
-(defn add-font-face []
-  (stylefy/font-face {:font-family "open_sans"
-                      :src "url('../fonts/OpenSans-Regular-webfont.woff') format('woff')"
-                      :font-weight "normal"
-                      :font-style "normal"}))
-
 (def main-style
   {:padding "20px"
    :max-width "600px"
    :margin "0 auto"
-   :font-family "'Open Sans', sans-serif"})
+   :font-family "'Open Sans', sans-serif" 
+   :border "3px solid #ccc"})
 
 (def button-style
   {:background-color "#4CAF50"
@@ -206,6 +201,23 @@
    :font-size "18px"
    :font-family "inherit"})
 
+(def side-panel-style
+  {:flex "1"
+   :padding "10px"
+   :margin-left "20px"
+   :border "3px solid #ccc"
+   :border-radius "4px"
+   :background-color "#F0FFFF"
+   :max-width "200px"})
+
+(def main-panel-style
+  {:max-width "280px"})
+
+(def main-container-style
+  {:display "flex"
+   :justify-content "space-around"
+   })
+
 
 
 ;---------- main page elements ----------
@@ -215,19 +227,20 @@
   []
   (let [game-started (rf/subscribe [::game-started])]
     (when-not @game-started
-      [:button {:on-click #(rf/dispatch  [::set-words-and-letters word-collection])
-                :style button-style}
+      [:button
+       {:on-click #(rf/dispatch  [::set-words-and-letters word-collection])
+        :style button-style}
        "Get Letters!"])))
 
 (defn submit-button 
   [word]
   (let [input-value (rf/subscribe [::current-input])]
-    [:button 
+    [:button
      {:on-click #(when (seq word)
-                           (println "click!")
-                           (rf/dispatch [::submit-word @input-value])
-                           (rf/dispatch [::update-current-input ""]))} ; clear input after submit
-     
+                   (println "click!")
+                   (rf/dispatch [::submit-word @input-value])
+                   (rf/dispatch [::update-current-input ""])) ; clear input after submit
+      :style button-style} 
      "Submit"]))
 
 (defn text-input
@@ -275,22 +288,27 @@
     [:div (use-style main-style)
      [:h1
       "Hello, " @name]
+     [:h3 @message]
      [spawn-words-button]
-     (when @game-started
-       [:div 
-        [:h3
-         "Here are the words you have found:"]
-        [:p (str/join ", " (sort @found-words))]
-        [text-input]
-        [submit-button @current-input] 
-        [:h3 @message]
-        [:p "Common Letter: " (str (first @common-letter))]
-        [:p "Other Letters: " (str/join ", " @display-letters)]
-        [shuffle-order-button @display-letters]
-        [:h3 "Your score: " @score]])
+     (when @game-started 
+       [:div (use-style main-container-style)
+        [:div (use-style main-panel-style) 
+         [:div (use-style {:text-align "center"})
+          [text-input]
+          [submit-button @current-input]]
+
+         [:p "Common Letter: " (str (first @common-letter))]
+         [:p "Other Letters: " (str/join ", " @display-letters)]
+         [:div (use-style {:text-align "center"})
+          [shuffle-order-button @display-letters]]
+         [:h3 "Your score: " @score]]
+
+        [:div (use-style side-panel-style)
+         [:h3
+          "Found words:"]
+         [:ul (for [word (sort @found-words)]     ; sort found words into an alphabetical list
+                   [:li word])]]])
      
-     
-     [:p "debug: db: " @database]
      ]]))
 
 
