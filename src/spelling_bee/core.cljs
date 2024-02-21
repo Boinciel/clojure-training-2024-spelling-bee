@@ -53,14 +53,26 @@
    set/intersection
    (map set (seq word-set))))
 
-(defn word-validity-case [word letters common-letter]
+(defn validate-word 
+  "Checks the given word against the current word list and letter set to see if it is valid. Gives the following keywords as a result.
+   
+   :submit-ok :too-short :invalid :no-common :not-in-list :other"
+  [word word-list letters common-letter]
   (cond
-    (contains? word-collection word)                   :submit-ok       ; first check if the word is in the word-collection
+    (contains? word-list word)                   :submit-ok       ; first check if the word is in the word-collection
     (> 4 (count (seq word)))                           :too-short       ; check length, notify if less than 3 letters
     (not (every? letters (set word)))                  :invalid         ; check if every letter in the word is in letters set 
     (not (contains? (set word) (first common-letter))) :no-common       ; if it does not contain the common letter
     (contains? (set word) (first common-letter))       :not-in-list     ; then check if the word at least contains common letter 
     :else                                              :other))         ; generic if it somehow manages to not match one of the above
+
+(defn validate-letter [letter letters common-letter]
+  (cond
+    (= letter (str (first common-letter))) :required
+    (contains? (set letters) letter) :valid
+    :else                            :invalid))
+
+
 
 (defn point-formula [word letters]
   (cond
@@ -160,8 +172,9 @@
   (fn [db [_ word]]
     (let [letters       (:letters       db)
           common-letter (:common-letter db)
+          words         (:words         db)
           point-val     (point-formula word letters)]
-      (case (word-validity-case word letters common-letter)
+      (case (validate-word word words letters common-letter)
         :submit-ok   (if (contains? (:found-words db) word)
                        (assoc db :message "You've already found that word!") 
                          (-> db
@@ -237,6 +250,11 @@
    :background-position "center center"
    :background-repeat "no-repeat"})
 
+(defn letter-style [letter-validation-sequence]
+  (case letter-validation-sequence
+    :required {:color "#FF0000"}
+    :valid    {:color "#000000"}
+    :invalid  {:color "#AAAAAA" :opacity "0.5"}))
 
 
 ;---------- main page elements ----------
@@ -265,7 +283,9 @@
 (defn text-input
   "Field for the user to input a word of their choosing."
   []
-  (let [input-value (rf/subscribe [::current-input])]
+  (let [;letters       (rf/subscribe [::letters])
+        ;common-letter (rf/subscribe [::common-letter])
+        input-value   (rf/subscribe [::current-input])]
     [:input {:type         "text"
              :placeholder  "Type here!"
              :value        @input-value
@@ -278,7 +298,6 @@
   [:button {:on-click #(rf/dispatch  [::shuffle-letter-order display-letters])
             :style button-style}
    "Shuffle letters"])
-
 
 
 ;---------- main page renderer ----------
