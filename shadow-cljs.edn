@@ -7,6 +7,8 @@
  :dependencies
  [[reagent "1.1.1"]
   [re-frame "1.4.2"]
+  [stylefy "3.2.0"]
+  [stylefy/reagent "3.0.0"]
 
   [binaryage/devtools "1.0.6"]]
 

@@ -1,11 +1,12 @@
 (ns spelling-bee.core
   (:require
 
-   [clojure.set :as set]
-   [clojure.string :as str]
-   [re-frame.core :as rf]
-   [reagent.dom :as rdom]
-   [clojure.string :as string]))
+   [clojure.set       :as set]
+   [clojure.string    :as str]
+   [re-frame.core     :as rf]
+   [reagent.dom       :as rdom]
+   [stylefy.core      :as stylefy :refer [use-style]]
+   [stylefy.reagent   :as stylefy-reagent]))
 
 (def debug?
   ^boolean goog.DEBUG)
@@ -170,6 +171,43 @@
         :other       (assoc  db :message "Try again.")))))
 
 
+
+;---------- stylefy components ----------
+
+(defn add-font-face []
+  (stylefy/font-face {:font-family "open_sans"
+                      :src "url('../fonts/OpenSans-Regular-webfont.woff') format('woff')"
+                      :font-weight "normal"
+                      :font-style "normal"}))
+
+(def main-style
+  {:padding "20px"
+   :max-width "600px"
+   :margin "0 auto"
+   :font-family "'Open Sans', sans-serif"})
+
+(def button-style
+  {:background-color "#4CAF50"
+   :border "none"
+   :color "white"
+   :padding "15px 32px"
+   :text-align "center"
+   :text-decoration "none"
+   :display "inline-block"
+   :font-size "16px"
+   :margin "4px 2px"
+   :cursor "pointer"})
+
+(def input-style
+  {:padding "10px"
+   :border "4px solid #fcc"
+   :border-radius "3px"
+   :margin-bottom "5px"
+   :font-size "18px"
+   :font-family "inherit"})
+
+
+
 ;---------- main page elements ----------
 
 (defn spawn-words-button
@@ -177,16 +215,19 @@
   []
   (let [game-started (rf/subscribe [::game-started])]
     (when-not @game-started
-      [:button {:on-click #(rf/dispatch  [::set-words-and-letters word-collection])}
+      [:button {:on-click #(rf/dispatch  [::set-words-and-letters word-collection])
+                :style button-style}
        "Get Letters!"])))
 
 (defn submit-button 
   [word]
   (let [input-value (rf/subscribe [::current-input])]
-    [:button {:on-click #(when (seq word)
+    [:button 
+     {:on-click #(when (seq word)
                            (println "click!")
                            (rf/dispatch [::submit-word @input-value])
                            (rf/dispatch [::update-current-input ""]))} ; clear input after submit
+     
      "Submit"]))
 
 (defn text-input
@@ -196,13 +237,17 @@
     [:input {:type         "text"
              :placeholder  "Type here!"
              :value        @input-value
-             :on-change    #(rf/dispatch [::update-current-input (-> % .-target .-value)])}]))
+             :on-change    #(rf/dispatch [::update-current-input (-> % .-target .-value)])
+             :style input-style}]))
 
 (defn shuffle-order-button
   "Shuffles the order of the letters displayed."
   [display-letters]
-  [:button {:on-click #(rf/dispatch  [::shuffle-letter-order display-letters])}
+  [:button {:on-click #(rf/dispatch  [::shuffle-letter-order display-letters])
+            :style button-style}
    "Shuffle letters"])
+
+
 
 ;---------- main page renderer ----------
 
@@ -218,12 +263,21 @@
         message         (rf/subscribe [::message])
         score           (rf/subscribe [::score])
         database        (rf/subscribe [::dbdb])]
-    [:div
+    
+    [:html
+     [:head
+      [:title "Spelling Bee!"]
+    
+      [:style {:id "_stylefy-server-styles_"} "_stylefy-server-styles-content_"]
+      [:style {:id "_stylefy-constant-styles_"}]
+      [:style {:id "_stylefy-styles_"}]]
+    
+    [:div (use-style main-style)
      [:h1
       "Hello, " @name]
      [spawn-words-button]
      (when @game-started
-       [:div
+       [:div 
         [:h3
          "Here are the words you have found:"]
         [:p (str/join ", " (sort @found-words))]
@@ -237,7 +291,7 @@
      
      
      [:p "debug: db: " @database]
-     ]))
+     ]]))
 
 
 ;---------- page load parameters ----------
@@ -254,5 +308,6 @@
 
 (defn init []
   (rf/dispatch-sync [::initialize-db])
+  (stylefy/init {:dom (stylefy-reagent/init)})
   (dev-setup)
   (mount-root))
