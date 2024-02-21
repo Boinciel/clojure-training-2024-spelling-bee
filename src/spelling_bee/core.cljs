@@ -53,6 +53,9 @@
    set/intersection
    (map set (seq word-set))))
 
+(defn subtract-letter [input]
+  (subs input 0 (dec (count input))))
+
 (defn validate-word 
   "Checks the given word against the current word list and letter set to see if it is valid. Gives the following keywords as a result.
    
@@ -192,9 +195,22 @@
 ;---------- handlers ----------
 
 (defn global-key-handler [e]
-  (let [key (.-key e)]
-    (when (re-matches #"[a-zA-Z]" key)
-      (rf/dispatch [::update-current-input (str key)]))))
+  (let [key         (.-key e)
+        input-value (rf/subscribe [::current-input])]
+    (cond
+      (re-matches #"[a-zA-Z]" key)
+      (rf/dispatch [::update-current-input (str key)])
+    
+      (= key "Enter")
+      (do
+        (rf/dispatch [::submit-word @input-value])
+        (rf/dispatch [::assoc-current-input ""]))  ; Clear input after submit
+    
+      (= key "Backspace")
+      (rf/dispatch [::assoc-current-input (subtract-letter @input-value)])
+    
+      :else
+      nil)))
 
 
 
@@ -259,7 +275,7 @@
 
 ;---------- main page elements ----------
 
-(defn spawn-words-button
+(defn spawn-words-button!
   "Starts the game with a preset set of words."
   []
   (let [game-started (rf/subscribe [::game-started])]
@@ -269,7 +285,7 @@
         :style button-style}
        "Get Letters!"])))
 
-(defn submit-button 
+(defn submit-button! 
   [word]
   (let [input-value (rf/subscribe [::current-input])]
     [:button
@@ -292,7 +308,7 @@
              :on-change    #(rf/dispatch [::assoc-current-input (-> % .-target .-value)])
              :style input-style}]))
 
-(defn shuffle-order-button
+(defn shuffle-order-button!
   "Shuffles the order of the letters displayed."
   [display-letters]
   [:button {:on-click #(rf/dispatch  [::shuffle-letter-order display-letters])
@@ -329,18 +345,18 @@
         "Hello, " @name]
        [:p "debug: "@database]
        [:h3 @message]
-       [spawn-words-button]
+       [spawn-words-button!]
        (when @game-started 
          [:div (use-style main-container-style)
           [:div (use-style main-panel-style) 
            [:div (use-style {:text-align "center"})
             [text-input]
-            [submit-button @current-input]]
+            [submit-button! @current-input]]
 
            [:p "Common Letter: " (str (first @common-letter))]
            [:p "Other Letters: " (str/join ", " @display-letters)]
            [:div (use-style {:text-align "center"})
-            [shuffle-order-button @display-letters]]
+            [shuffle-order-button! @display-letters]]
            [:h3 "Your score: " @score]]
 
           [:div (use-style side-panel-style)
@@ -364,7 +380,7 @@
     (rdom/render [main-panel] root-el)))
 
 (defn install-global-key-listeners []
-  (.addEventListener js/window "keypress" global-key-handler))
+  (.addEventListener js/window "keydown" global-key-handler))
 
 (defn init []
   (install-global-key-listeners)               ; listen for keypress events
