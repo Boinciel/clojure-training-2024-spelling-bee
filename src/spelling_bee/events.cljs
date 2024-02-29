@@ -17,7 +17,9 @@
    :found-words       #{}
    :current-input     ""
    :message           "Welcome to the Spelling Bee!"
-   :score             0})
+   :score             0
+   :shake-message     false
+   :shake-angry     false})
 
 ;---------- handlers ----------
 
@@ -27,14 +29,14 @@
     (cond
       (re-matches #"[a-zA-Z]" key)
       (rf/dispatch [::append-current-input (str key)])
-    
-      (= key "Enter") 
-        (rf/dispatch [::submit-word @input-value])
-    
+
+      (= key "Enter")
+      (rf/dispatch [::submit-word @input-value])
+
       (= key "Backspace")
       (let [subtract-letter #(subs % 0 (dec (count %)))]
         (rf/dispatch [::set-current-input (subtract-letter @input-value)]))
-    
+
       :else
       nil)))
 ; remove subscribe, do in functions
@@ -131,6 +133,13 @@
   (fn [db]
     db))
 
+(rf/reg-sub ::shake-message?
+  (fn [db]
+    (:shake-message db)))
+
+(rf/reg-sub ::shake-angry?
+  (fn [db]
+    (:shake-angry db)))
 
 
 ;---------- events ----------
@@ -161,25 +170,30 @@
   (fn [db [_ display-letters]]
     (assoc db :display-letters (shuffle display-letters))))
 
+(rf/reg-event-db ::reset-shake-message
+  (fn [db _]
+    (assoc db :shake-message false :shake-angry false)))
+
 (rf/reg-event-db ::submit-word
   (fn [db [_ word]]
     (let [letters       (:letters       db)
           common-letter (:common-letter db)
           words         (:words         db)
-          current-word  (:current-word  db)
           point-val     (calculate-points word letters)
-          ;get-message   #(assoc  db :message)
-          ]
+          submit        (partial assoc db :current-input "" :message)]
+      (js/setTimeout #(rf/dispatch [::reset-shake-message]) 500) ; preemptively set a timeout to kill any shaking 
       (case (validate-word word words letters common-letter)
         :submit-ok   (if (contains? (:found-words db) word)
-                       (assoc db :message "You've already found that word!")
+                       (submit "You've already found that word!")
                        (-> db
                            (update :found-words conj word)
                            (update :score + point-val)
-                           (assoc  :message (str "Great job! You found " word ", worth a score of " point-val "!")))) ; add the valid word to found words
-        :too-short   (assoc  db :message "Only words with 4 letters or more count.")
-        :not-in-list (assoc  db :message (str "Sorry, " word " isn't in the word list today."))
-        :no-common   (assoc  db :message "Nice try, but the word needs to contain the common letter.")
-        :invalid     (assoc  db :message "All letters in the word must be from the given letter set.")
-        :other       (assoc  db :message "Try again.")))))
+                           (assoc  :current-input "" :message (str "Great job! You found " word ", worth a score of " point-val "!")))) ; add the valid word to found words
+        :too-short   (submit "Only words with 4 letters or more count.")
+        :not-in-list (submit (str "Sorry, " word " isn't in the word list today."))
+        :no-common   (submit "Nice try, but the word needs to contain the common letter." :shake-message true)
+        :invalid     (submit "All letters in the word must be from the given letter set." :shake-message true :shake-angry true)
+        :other       (submit "Try again.")))))
 ; use reg-event-fx to dispatch further event to clear input
+
+

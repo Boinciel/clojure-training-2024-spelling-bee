@@ -45,18 +45,14 @@
     [:button
      {:on-click #(when (seq word)
                    (println "click!")
-                   (rf/dispatch [::events/submit-word @input-value])
-                  ;;  (rf/dispatch [::events/set-current-input ""])
-                  ) ; clear input after submit
+                   (rf/dispatch [::events/submit-word @input-value])) 
       :class "button-style"} 
      "Submit"]))
 
 (defn text-input
   "Field for the user to input a word of their choosing."
   []
-  (let [;letters       (rf/subscribe [::events/letters])
-        ;common-letter (rf/subscribe [::events/common-letter])
-        input-value   (rf/subscribe [::events/current-input])]
+  (let [input-value   (rf/subscribe [::events/current-input])]
     [:input {:type         "text"
              :placeholder  "Type here!"
              :value        @input-value
@@ -76,33 +72,27 @@
 
 (defn main-panel []
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (with-let [name            (rf/subscribe [::events/name])
-                game-started    (rf/subscribe [::events/game-started])
-                words           (rf/subscribe [::events/words])
-                found-words     (rf/subscribe [::events/found-words])
-                common-letter   (rf/subscribe [::events/common-letter])
-                letters         (rf/subscribe [::events/letters])
-                display-letters (rf/subscribe [::events/display-letters])
-                current-input   (rf/subscribe [::events/current-input])
-                message         (rf/subscribe [::events/message])
-                score           (rf/subscribe [::events/score])
-                database        (rf/subscribe [::events/dbdb])]
-    
-    [:html
-     [:head
-      [:title "Spelling Bee!"]
-      
-      [:style {:id "_stylefy-server-styles_"} "_stylefy-server-styles-content_"]
-      [:style {:id "_stylefy-constant-styles_"}]
-      [:style {:id "_stylefy-styles_"}]]
+  (with-let [
+             name            (rf/subscribe [::events/name])
+             game-started    (rf/subscribe [::events/game-started])
+             words           (rf/subscribe [::events/words])
+             found-words     (rf/subscribe [::events/found-words])
+             common-letter   (rf/subscribe [::events/common-letter])
+             letters         (rf/subscribe [::events/letters])
+             display-letters (rf/subscribe [::events/display-letters])
+             current-input   (rf/subscribe [::events/current-input])
+             message         (rf/subscribe [::events/message])
+             score           (rf/subscribe [::events/score])
+             database        (rf/subscribe [::events/dbdb])
+             shake-message?  (rf/subscribe [::events/shake-message?])
+             shake-angry?    (rf/subscribe [::events/shake-angry?])] 
      
-     [:body {:class "body-background"}
-      [:div 
+      [:div
        [:div {:class "main-style"}
         [:h1
          "Hello, " @name]
        ;[:p "debug: "@database]
-        [:h3 @message]
+        [:h3 {:class (str ""(when @shake-message? "shake") (when @shake-angry? "-angry"))} @message]
         [spawn-words-button]
         (when @game-started 
           [:div {:class "main-container-style"}
@@ -122,7 +112,7 @@
              "Found words:"]
             [:ul (for [word (sort @found-words)]     ; sort found words into an alphabetical list
                    [:li word])]]]) 
-        ]]]]))
+        ]]))
 
 
 ;---------- page load parameters ----------
