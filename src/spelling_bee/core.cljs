@@ -59,9 +59,11 @@
              :on-change    #(rf/dispatch [::events/set-current-input (-> % .-target .-value)])
              :class "input-style"}]))
 
-(defn hex-button [letter]
-  [:button.hex-button {:on-click #(rf/dispatch [::events/append-current-input letter])}
-   letter])
+(defn hex-button
+  ([letter & [is-common]]
+   [:button.hex-button {:on-click #(rf/dispatch [::events/append-current-input letter])
+                        :style (when is-common {:font-weight "bold" :color "#4CAF50"})}
+    letter]))
 
 (defn letter-buttons-panel [valid-letters common-letter]
   (let [top-row (take 2 valid-letters)
@@ -69,8 +71,14 @@
         bottom-row (take 2 (drop 4 valid-letters))]
     [:div.letter-buttons-panel
      [:div.hex-row.top-row (map hex-button top-row)]
-     [:div.hex-row.middle-row (map hex-button middle-row)]
+     ;; if index is 1 (the middle one), it passes letter and a truthy value into the argument so it can be detected.
+     [:div.hex-row.middle-row (doall (map-indexed (fn [idx letter] (hex-button letter (and (= idx 1) (= letter common-letter)))) middle-row))] 
      [:div.hex-row.bottom-row (map hex-button bottom-row)]]))
+
+(defn backspace-button []
+  [:button {:class "garbage-can-button"
+            :on-click #(rf/dispatch [::events/delete-last-letter])}
+   [:i {:class "fa fa-trash"}]])
 
 (defn shuffle-order-button!
   "Shuffles the order of the letters displayed."
@@ -116,7 +124,8 @@
 [:div {:class "letter-buttons-container"}
  [letter-buttons-panel @display-letters (first @common-letter)]] 
             [:div (use-style {:text-align "center"})
-             [shuffle-order-button! @display-letters]]
+             [shuffle-order-button! @display-letters]
+             [backspace-button]]
             [:h3 "Your score: " @score]]
 
            [:div {:class "side-panel-style"}

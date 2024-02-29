@@ -31,12 +31,13 @@
       (rf/dispatch [::append-current-input (str key)])
 
       (= key "Enter")
-      (rf/dispatch [::submit-word @input-value])
+      (rf/dispatch [::submit-word input-value])
 
       (= key "Backspace")
       (let [subtract-letter #(subs % 0 (dec (count %)))]
         (rf/dispatch [::set-current-input (subtract-letter @input-value)]))
-
+      ;; (rf/dispatch [::delete-last-letter])
+      
       :else
       nil)))
 ; remove subscribe, do in functions
@@ -165,6 +166,10 @@
 (rf/reg-event-db ::append-current-input
   (fn [db [_ input-value]]
     (update db :current-input str input-value)))
+
+(rf/reg-event-db ::delete-last-letter
+  (fn [db _]
+    (update db :current-input #(subs % 0 (max 0 (dec (count %)))))))
 
 (rf/reg-event-db ::shuffle-letter-order
   (fn [db [_ display-letters]]

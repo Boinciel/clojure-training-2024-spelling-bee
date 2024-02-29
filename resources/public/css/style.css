@@ -1,4 +1,4 @@
-/* some style */
+/* some css style */
 
 .main-style {
     padding: 20px;
@@ -19,13 +19,27 @@
     text-decoration: none;
     display: inline-block;
     font-size: 22px;
-    margin: 0px 0px;
+    margin-top: 8px;
+    margin-bottom: 8px;
     cursor: pointer;
     clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     transition: transform 0.2s ease-in-out;
   }
 
   .button-style:hover {
+    transform: scale(1.5);
+  }
+
+  .garbage-can-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 30px;
+    color:#ffc400;
+    padding: 10px;
+    transition: transform 0.2s ease-in-out;
+  }
+  .garbage-can-button:hover {
     transform: scale(1.5);
   }
 
@@ -94,11 +108,9 @@
     height: 70px;
     background-color: #ffc400;
     border: 0px;
-    color: #333;
     text-align: center;
-    line-height: 70px;
     font-size: 24px;
-    margin: 5px;
+    margin: 0px;
     cursor: pointer;
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     transition: transform 0.2s ease-in-out;
@@ -123,3 +135,9 @@
     margin: 4px;
 
   }
+
+  .top-row,
+.bottom-row {
+  margin-top: -16px;
+  margin-bottom: -16px;
+}
