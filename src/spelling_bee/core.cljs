@@ -59,6 +59,19 @@
              :on-change    #(rf/dispatch [::events/set-current-input (-> % .-target .-value)])
              :class "input-style"}]))
 
+(defn hex-button [letter]
+  [:button.hex-button {:on-click #(rf/dispatch [::events/append-current-input letter])}
+   letter])
+
+(defn letter-buttons-panel [valid-letters common-letter]
+  (let [top-row (take 2 valid-letters)
+        middle-row (concat (take 1 (drop 2 valid-letters)) [common-letter] (take 1 (drop 3 valid-letters)))
+        bottom-row (take 2 (drop 4 valid-letters))]
+    [:div.letter-buttons-panel
+     [:div.hex-row.top-row (map hex-button top-row)]
+     [:div.hex-row.middle-row (map hex-button middle-row)]
+     [:div.hex-row.bottom-row (map hex-button bottom-row)]]))
+
 (defn shuffle-order-button!
   "Shuffles the order of the letters displayed."
   [display-letters]
@@ -100,9 +113,8 @@
             [:div (use-style {:text-align "center"})
              [text-input]
              [submit-button @current-input]]
-
-            [:p "Common Letter: " (str (first @common-letter))]
-            [:p "Other Letters: " (str/join ", " @display-letters)]
+[:div {:class "letter-buttons-container"}
+ [letter-buttons-panel @display-letters (first @common-letter)]] 
             [:div (use-style {:text-align "center"})
              [shuffle-order-button! @display-letters]]
             [:h3 "Your score: " @score]]
@@ -128,7 +140,7 @@
     (rdom/render [main-panel] root-el)))
 
 (defn install-global-key-listeners []
-  (.addEventListener js/window "keydown" events/global-key-handler))
+  (.addEventListener js/window "keydown" events/global-key-handler (rf/subscribe [::events/current-input])))
 
 (defn init []
   (install-global-key-listeners)               ; listen for keypress events

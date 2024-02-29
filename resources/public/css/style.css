@@ -18,10 +18,17 @@
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
+    font-size: 22px;
+    margin: 0px 0px;
     cursor: pointer;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    transition: transform 0.2s ease-in-out;
   }
+
+  .button-style:hover {
+    transform: scale(1.5);
+  }
+
   
   .input-style {
     padding: 10px;
@@ -56,6 +63,8 @@
     background-repeat: repeat;
   }
 
+/* animation */
+
   @keyframes shake {
     0% { transform: translate(0px, 0px); }
     25% { transform: translate(-5px, 0px); }
@@ -75,4 +84,42 @@
   }
   .shake-angry {
     animation: angry-shake 0.5s;
+  }
+
+/* cool button styles */
+
+
+  .hex-button {
+    width: 60px;
+    height: 70px;
+    background-color: #ffc400;
+    border: 0px;
+    color: #333;
+    text-align: center;
+    line-height: 70px;
+    font-size: 24px;
+    margin: 5px;
+    cursor: pointer;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .hex-button:hover {
+    transform: scale(1.2);
+  }
+
+  .letter-buttons-panel {
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  
+  .hex-row {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .hex-button {
+    margin: 4px;
+
   }

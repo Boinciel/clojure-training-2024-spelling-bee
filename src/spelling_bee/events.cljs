@@ -23,9 +23,9 @@
 
 ;---------- handlers ----------
 
-(defn global-key-handler [e]
+(defn global-key-handler [e input]
   (let [key         (.-key e)
-        input-value (rf/subscribe [::current-input])]
+        input-value input]
     (cond
       (re-matches #"[a-zA-Z]" key)
       (rf/dispatch [::append-current-input (str key)])
@@ -173,6 +173,8 @@
 (rf/reg-event-db ::reset-shake-message
   (fn [db _]
     (assoc db :shake-message false :shake-angry false)))
+
+
 
 (rf/reg-event-db ::submit-word
   (fn [db [_ word]]
