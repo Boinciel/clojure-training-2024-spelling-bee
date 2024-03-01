@@ -31,57 +31,14 @@
 
 ;---------- subscriptions to data from app state ----------
 
-(rf/reg-sub ::name
-  (fn [db]
-    (:name db)))
+(rf/reg-sub ::get
+  (fn [db [_ key]]
+    (get db key)))
 
-(rf/reg-sub ::game-started
-  (fn [db]
-    (:game-started db)))
-
-(rf/reg-sub ::words
-  (fn [db]
-    (:words db)))
-
-(rf/reg-sub ::found-words
-  (fn [db]
-    (:found-words db)))
-
-(rf/reg-sub ::common-letter
-  (fn [db]
-    (:common-letter db)))
-
-(rf/reg-sub ::letters
-  (fn [db]
-    (:letters db)))
-
-(rf/reg-sub ::display-letters
-  (fn [db]
-    (:display-letters db)))
-
-(rf/reg-sub ::current-input
-  (fn [db]
-    (:current-input db)))
-
-(rf/reg-sub ::message
-  (fn [db]
-    (:message db)))
-
-(rf/reg-sub ::score
-  (fn [db]
-    (:score db)))
 
 (rf/reg-sub ::dbdb
   (fn [db]
     db))
-
-(rf/reg-sub ::shake-message?
-  (fn [db]
-    (:shake-message db)))
-
-(rf/reg-sub ::shake-angry?
-  (fn [db]
-    (:shake-angry db)))
 
 
 ;---------- events ----------

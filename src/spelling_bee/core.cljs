@@ -1,12 +1,12 @@
 (ns spelling-bee.core
   (:require 
    [re-frame.core         :as rf]
-   [reagent.core          :as ra      :refer [with-let]]
+   [reagent.core          :as ra       :refer [with-let]]
    [reagent.dom           :as rdom]
-   [stylefy.core          :as stylefy :refer [use-style]]
+   [stylefy.core          :as stylefy  :refer [use-style]]
    [stylefy.reagent       :as stylefy-reagent]
    [spelling-bee.events   :as events]
-   [spelling-bee.elements :as elements]))
+   [spelling-bee.elements :as elements :refer [db-get]]))
 
 (def debug?
   ^boolean goog.DEBUG)
@@ -14,26 +14,24 @@
 (set! *warn-on-infer* false)
 
 
-
-
 ;---------- main page renderer ----------
 
 (defn main-panel []
+  
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (with-let [
-             name            (rf/subscribe [::events/name])
-             game-started    (rf/subscribe [::events/game-started])
-             words           (rf/subscribe [::events/words])
-             found-words     (rf/subscribe [::events/found-words])
-             common-letter   (rf/subscribe [::events/common-letter])
-             letters         (rf/subscribe [::events/letters])
-             display-letters (rf/subscribe [::events/display-letters])
-             current-input   (rf/subscribe [::events/current-input])
-             message         (rf/subscribe [::events/message])
-             score           (rf/subscribe [::events/score])
-             database        (rf/subscribe [::events/dbdb])
-             shake-message?  (rf/subscribe [::events/shake-message?])
-             shake-angry?    (rf/subscribe [::events/shake-angry?])] 
+  (with-let [database        (rf/subscribe [::events/dbdb])
+             name            (db-get :name)
+             game-started    (db-get :game-started)
+             words           (db-get :words)
+             found-words     (db-get :found-words)
+             common-letter   (db-get :common-letter)
+             letters         (db-get :letters)
+             display-letters (db-get :display-letters)
+             current-input   (db-get :current-input)
+             message         (db-get :message)
+             score           (db-get :score)
+             shake-message?  (db-get :shake-message?)
+             shake-angry?    (db-get :shake-angry?)] 
      
       [:div
        [:div {:class "main-style"}

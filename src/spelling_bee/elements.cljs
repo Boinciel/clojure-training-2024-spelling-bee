@@ -8,6 +8,10 @@
    [spelling-bee.words  :as words]))
 
 
+;---------- shorthand ----------
+(defn db-get [key]
+  (rf/subscribe [::events/get key]))
+
 ;---------- stylefy components ----------
 ; px vs rem, google
 (defn letter-style [letter-validation-sequence]
@@ -23,7 +27,7 @@
 (defn spawn-words-button
   "Starts the game with a preset set of words."
   []
-  (let [game-started (rf/subscribe [::events/game-started])]
+  (let [game-started (db-get :game-started)]
     (when-not @game-started
       [:button
        {:on-click #(rf/dispatch  [::events/set-words-and-letters words/word-collection])
@@ -32,7 +36,7 @@
 
 (defn submit-button
   [word]
-  (let [input-value (rf/subscribe [::events/current-input])]
+  (let [input-value (rf/subscribe [::events/get :current-input])]
     [:button
      {:on-click #(when (seq word)
                    (println "click!")
@@ -45,16 +49,16 @@
     [:span (use-style (letter-style letter-validation)) letter]))
 
 (defn styled-text-input []
-  (let [input-value   (rf/subscribe [::events/current-input])
-        valid-letters (rf/subscribe [::events/letters])
-        common-letter (rf/subscribe [::events/common-letter])]
+  (let [input-value   (rf/subscribe [::events/get :current-input])
+        valid-letters (rf/subscribe [::events/get :letters])
+        common-letter (rf/subscribe [::events/get :common-letter])]
     [:div.input-container
 
      [:input.input-style
       {:type         "text"
        :placeholder  (when (str/blank? @input-value) "Type here!")
        :value        @input-value
-       :on-change    #(rf/dispatch [::events/set-current-input (-> % .-target .-value)])}]
+       :on-change    #(rf/dispatch [::events/get :set-current-input (-> % .-target .-value)])}]
      [:div.styled-letters
       (map-indexed
        (fn [_ ltr]
