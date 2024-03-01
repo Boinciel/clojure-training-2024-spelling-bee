@@ -10,6 +10,7 @@
                        "pyro"          "roar"           "roof"
                        "ropy"})
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (def word-collection2 #{"unhinging"    "chunk"          "chichi"
                         "nigh"         "hinging"        "chucking"
                         "inch"         "chuck"          "chin"

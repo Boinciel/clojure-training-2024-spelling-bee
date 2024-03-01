@@ -1,8 +1,7 @@
 (ns spelling-bee.events
-  (:require
-   [clojure.set         :as set]
-   [clojure.string      :as str]
-   [re-frame.core     :as rf]))
+  (:require 
+   [re-frame.core      :as rf]
+   [spelling-bee.logic :as logic]))
 
 
 ;---------- our app state atom ----------
@@ -29,52 +28,6 @@
     (= key "Enter") [::submit-word (:current-input db)]
     (= key "Backspace") [::delete-last-letter]
     :else nil))
-
-;---------- various functions ----------
-
-;; Later this can be substituted with a database call to pull a list of words.
-
-
-(defn get-unique-letter-collection [word-set]
-  (-> word-set
-      vec
-      str/join
-      seq
-      set))
-
-(defn find-common-letter [word-set]
-  (reduce
-   set/intersection
-   (map set (seq word-set))))
-
-
-
-(defn validate-word
-  "Checks the given word against the current word list and letter set to see if it is valid. Gives the following keywords as a result.
-   
-   :submit-ok :too-short :invalid :no-common :not-in-list :other"
-  [word word-list letters common-letter]
-  (cond
-    (contains? word-list word)                         :submit-ok       ; first check if the word is in the word collection
-    (> 4 (count (seq word)))                           :too-short       ; check length, notify if less than 3 letters
-    (not (every? letters (set word)))                  :invalid         ; check if every letter in the word is in letters set 
-    (not (contains? (set word) (first common-letter))) :no-common       ; if it does not contain the common letter
-    (contains? (set word) (first common-letter))       :not-in-list     ; then check if the word at least contains common letter 
-    :else                                              :other))         ; generic if it somehow manages to not match one of the above
-
-(defn validate-letter [letter letters common-letter]
-  (cond
-    (= letter (str (first common-letter))) :required
-    (contains? (set letters) letter) :valid
-    :else                            :invalid))
-
-(defn calculate-points [word letters]
-  (cond
-    (= (get-unique-letter-collection word) (set letters)) (+ (count (seq word)) 7)
-    (= (count (seq word)) 4) (int 1)
-    :else (count (seq word))))
-
-;; (map #(validate-letter #{}) (seq "arroyo"))
 
 ;---------- subscriptions to data from app state ----------
 
@@ -139,8 +92,8 @@
 
 (rf/reg-event-db ::set-words-and-letters
   (fn [db [_ word-set]]
-    (let [common-letter (find-common-letter word-set)
-          letter-coll   (get-unique-letter-collection word-set)]
+    (let [common-letter (logic/find-common-letter word-set)
+          letter-coll   (logic/get-unique-letter-collection word-set)]
       (assoc db :words word-set
              :common-letter   common-letter
              :letters         letter-coll
@@ -180,10 +133,10 @@
     (let [letters       (:letters       db)
           common-letter (:common-letter db)
           words         (:words         db)
-          point-val     (calculate-points word letters)
+          point-val     (logic/calculate-points word letters)
           submit        (partial assoc db :current-input "" :message)]
       (js/setTimeout #(rf/dispatch [::reset-shake-message]) 500) ; preemptively set a timeout to kill any shaking 
-      (case (validate-word word words letters common-letter)
+      (case (logic/validate-word word words letters common-letter)
         :submit-ok   (if (contains? (:found-words db) word)
                        (submit "You've already found that word!")
                        (-> db

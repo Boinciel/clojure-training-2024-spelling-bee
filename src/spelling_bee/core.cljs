@@ -7,6 +7,7 @@
    [stylefy.core        :as stylefy :refer [use-style]]
    [stylefy.reagent     :as stylefy-reagent]
    [spelling-bee.events :as events]
+   [spelling-bee.logic  :as logic]
    [spelling-bee.words  :as words]))
 
 (def debug?
@@ -48,7 +49,7 @@
      "Submit"]))
 
 (defn styled-letter [letter valid-letters common-letter]
-  (let [letter-validation (events/validate-letter letter valid-letters common-letter)]
+  (let [letter-validation (logic/validate-letter letter valid-letters common-letter)]
     [:span (use-style (letter-style letter-validation)) letter]))
 
 (defn styled-text-input []
@@ -160,6 +161,7 @@
 (defn install-global-key-listeners []
   (.addEventListener js/window "keydown" (fn [e] (rf/dispatch [::events/key-press (.-key e)]))))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn init []
   (install-global-key-listeners)               ; listen for keypress events
   (rf/dispatch-sync [::events/initialize-db])         ; get re-frame atom initialized
