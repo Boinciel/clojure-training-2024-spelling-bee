@@ -2,14 +2,12 @@
   (:require 
    [clojure.string      :as str]
    [re-frame.core       :as rf]
-   [reagent.core        :as ra]
+   [reagent.core        :as ra      :refer [with-let]]
    [reagent.dom         :as rdom]
    [stylefy.core        :as stylefy :refer [use-style]]
    [stylefy.reagent     :as stylefy-reagent]
    [spelling-bee.events :as events]
-   [spelling-bee.words  :as words])
-  (:require-macros
-   [reagent.core :refer [with-let]]))
+   [spelling-bee.words  :as words]))
 
 (def debug?
   ^boolean goog.DEBUG)
@@ -49,15 +47,26 @@
       :class "button-style"} 
      "Submit"]))
 
-(defn text-input
-  "Field for the user to input a word of their choosing."
-  []
-  (let [input-value   (rf/subscribe [::events/current-input])]
-    [:input {:type         "text"
-             :placeholder  "Type here!"
-             :value        @input-value
-             :on-change    #(rf/dispatch [::events/set-current-input (-> % .-target .-value)])
-             :class "input-style"}]))
+(defn styled-letter [letter valid-letters common-letter]
+  (let [letter-validation (events/validate-letter letter valid-letters common-letter)]
+    [:span (use-style (letter-style letter-validation)) letter]))
+
+(defn styled-text-input []
+  (let [input-value   (rf/subscribe [::events/current-input])
+        valid-letters (rf/subscribe [::events/letters])
+        common-letter (rf/subscribe [::events/common-letter])]
+    [:div.input-container
+    
+     [:input.input-style
+      {:type         "text"
+       :placeholder  (when (str/blank? @input-value) "Type here!")
+       :value        @input-value
+       :on-change    #(rf/dispatch [::events/set-current-input (-> % .-target .-value)])}] 
+ [:div.styled-letters
+      (map-indexed
+        (fn [_ ltr]
+          [styled-letter ltr @valid-letters @common-letter])
+        @input-value)]]))
 
 (defn hex-button
   ([letter & [is-common]]
@@ -119,7 +128,7 @@
           [:div {:class "main-container-style"}
            [:div {:class "main-panel-style"}
             [:div (use-style {:text-align "center"})
-             [text-input]
+             [styled-text-input]
              [submit-button @current-input]]
 [:div {:class "letter-buttons-container"}
  [letter-buttons-panel @display-letters (first @common-letter)]] 
@@ -149,7 +158,7 @@
     (rdom/render [main-panel] root-el)))
 
 (defn install-global-key-listeners []
-  (.addEventListener js/window "keydown" events/global-key-handler (rf/subscribe [::events/current-input])))
+  (.addEventListener js/window "keydown" (fn [e] (rf/dispatch [::events/key-press (.-key e)]))))
 
 (defn init []
   (install-global-key-listeners)               ; listen for keypress events

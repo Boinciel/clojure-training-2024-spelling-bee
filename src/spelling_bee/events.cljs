@@ -23,24 +23,12 @@
 
 ;---------- handlers ----------
 
-(defn global-key-handler [e input]
-  (let [key         (.-key e)
-        input-value input]
-    (cond
-      (re-matches #"[a-zA-Z]" key)
-      (rf/dispatch [::append-current-input (str key)])
-
-      (= key "Enter")
-      (rf/dispatch [::submit-word input-value])
-
-      (= key "Backspace")
-      (let [subtract-letter #(subs % 0 (dec (count %)))]
-        (rf/dispatch [::set-current-input (subtract-letter @input-value)]))
-      ;; (rf/dispatch [::delete-last-letter])
-      
-      :else
-      nil)))
-; remove subscribe, do in functions
+(defn global-key-handler [key db]
+  (cond
+    (re-matches #"[a-zA-Z]" key) [::append-current-input (str key)]
+    (= key "Enter") [::submit-word (:current-input db)]
+    (= key "Backspace") [::delete-last-letter]
+    :else nil))
 
 ;---------- various functions ----------
 
@@ -159,13 +147,21 @@
              :display-letters (shuffle (vec (remove common-letter letter-coll)))
              :game-started    true))))
 
+(rf/reg-event-fx ::key-press
+  (fn [{:keys [db]} [_ key]]
+    (let [result (global-key-handler key db)]
+      (when result
+        {:dispatch result}))))
+
 (rf/reg-event-db ::set-current-input
   (fn [db [_ input-value]]
     (assoc db :current-input input-value)))
 
 (rf/reg-event-db ::append-current-input
   (fn [db [_ input-value]]
-    (update db :current-input str input-value)))
+    (if (> 20 (count (seq (:current-input db))))
+      (update db :current-input str input-value)
+      (assoc  db :message "Less letters please!"))))
 
 (rf/reg-event-db ::delete-last-letter
   (fn [db _]
@@ -178,8 +174,6 @@
 (rf/reg-event-db ::reset-shake-message
   (fn [db _]
     (assoc db :shake-message false :shake-angry false)))
-
-
 
 (rf/reg-event-db ::submit-word
   (fn [db [_ word]]
