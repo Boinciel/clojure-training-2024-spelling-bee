@@ -30,8 +30,8 @@
              current-input   (db-get :current-input)
              message         (db-get :message)
              score           (db-get :score)
-             shake-message?  (db-get :shake-message?)
-             shake-angry?    (db-get :shake-angry?)] 
+             shake-message?  (db-get :shake-message)
+             shake-angry?    (db-get :shake-angry)] 
      
       [:div
        [:div {:class "main-style"}
