@@ -22,7 +22,7 @@
 
 
 
-;---------- main page elements ----------
+;---------- button elements ----------
 
 (defn spawn-words-button
   "Starts the game with a preset set of words."
@@ -36,7 +36,7 @@
 
 (defn submit-button
   [word]
-  (let [input-value (rf/subscribe [::events/get :current-input])]
+  (let [input-value (db-get :current-input)]
     [:button
      {:on-click #(when (seq word)
                    (println "click!")
@@ -44,14 +44,36 @@
       :class "button-style"}
      "Submit"]))
 
+(defn shuffle-order-button
+  "Shuffles the order of the letters displayed."
+  [display-letters]
+  [:button {:on-click #(rf/dispatch  [::events/shuffle-letter-order display-letters])
+            :class "button-style"}
+   "Shuffle letters"])
+
+(defn backspace-button []
+  [:button {:class "garbage-can-button"
+            :on-click #(rf/dispatch [::events/delete-last-letter])}
+   [:i {:class "fa fa-trash"}]])
+
+(defn hex-button
+  ([letter & [is-common]]
+   [:button.hex-button {:on-click #(rf/dispatch [::events/append-current-input letter])
+                        :style (when is-common {:font-weight "bold" :color "#4CAF50"})}
+    letter]))
+
+
+
+;---------- input elements ----------
+
 (defn styled-letter [letter valid-letters common-letter]
   (let [letter-validation (logic/validate-letter letter valid-letters common-letter)]
     [:span (use-style (letter-style letter-validation)) letter]))
 
 (defn styled-text-input []
-  (let [input-value   (rf/subscribe [::events/get :current-input])
-        valid-letters (rf/subscribe [::events/get :letters])
-        common-letter (rf/subscribe [::events/get :common-letter])]
+  (let [input-value   (db-get :current-input)
+        valid-letters (db-get :letters)
+        common-letter (db-get :common-letter)]
     [:div.input-container
 
      [:input.input-style
@@ -65,12 +87,6 @@
          [styled-letter ltr @valid-letters @common-letter])
        @input-value)]]))
 
-(defn hex-button
-  ([letter & [is-common]]
-   [:button.hex-button {:on-click #(rf/dispatch [::events/append-current-input letter])
-                        :style (when is-common {:font-weight "bold" :color "#4CAF50"})}
-    letter]))
-
 (defn letter-buttons-panel [valid-letters common-letter]
   (let [top-row (take 2 valid-letters)
         middle-row (concat (take 1 (drop 2 valid-letters)) [common-letter] (take 1 (drop 3 valid-letters)))
@@ -81,14 +97,9 @@
      [:div.hex-row.middle-row (doall (map-indexed (fn [idx letter] (hex-button letter (and (= idx 1) (= letter common-letter)))) middle-row))]
      [:div.hex-row.bottom-row (map hex-button bottom-row)]]))
 
-(defn backspace-button []
-  [:button {:class "garbage-can-button"
-            :on-click #(rf/dispatch [::events/delete-last-letter])}
-   [:i {:class "fa fa-trash"}]])
+;---------- pop-in etc elements ----------
 
-(defn shuffle-order-button
-  "Shuffles the order of the letters displayed."
-  [display-letters]
-  [:button {:on-click #(rf/dispatch  [::events/shuffle-letter-order display-letters])
-            :class "button-style"}
-   "Shuffle letters"])
+(defn message-component [message shake-message shake-angry] 
+  [:h3 {:class (str
+                "message-animation"
+                (when shake-message "shake") (when shake-angry "-angry"))} message])

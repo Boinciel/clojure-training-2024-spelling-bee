@@ -8,9 +8,6 @@
 
 ;---------- various functions ----------
 
-;; Later this can be substituted with a database call to pull a list of words.
-
-
 (defn get-unique-letter-collection [word-set]
   (-> word-set
       vec
@@ -22,8 +19,6 @@
   (reduce
    set/intersection
    (map set (seq word-set))))
-
-
 
 (defn validate-word
   "Checks the given word against the current word list and letter set to see if it is valid. Gives the following keywords as a result.

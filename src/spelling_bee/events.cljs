@@ -16,17 +16,18 @@
    :found-words       #{}
    :current-input     ""
    :message           "Welcome to the Spelling Bee!"
+   :message-show      false
    :score             0
    :shake-message     false
-   :shake-angry     false})
+   :shake-angry       false})
 
 ;---------- handlers ----------
 
 (defn global-key-handler [key db]
   (cond
     (re-matches #"[a-zA-Z]" key) [::append-current-input (str key)]
-    (= key "Enter") [::submit-word (:current-input db)]
-    (= key "Backspace") [::delete-last-letter]
+    (= key "Enter")              [::submit-word (:current-input db)]
+    (= key "Backspace")          [::delete-last-letter]
     :else nil))
 
 ;---------- subscriptions to data from app state ----------
@@ -66,6 +67,10 @@
 (rf/reg-event-db ::set-current-input
   (fn [db [_ input-value]]
     (assoc db :current-input input-value)))
+
+(rf/reg-event-db ::reset-message
+  (fn [db _]
+    (assoc db :showing-message true)))
 
 (rf/reg-event-db ::append-current-input
   (fn [db [_ input-value]]

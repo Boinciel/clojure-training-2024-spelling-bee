@@ -38,7 +38,7 @@
         [:h1
          "Hello, " @name]
        ;[:p "debug: "@database]
-        [:h3 {:class (str ""(when @shake-message? "shake") (when @shake-angry? "-angry"))} @message]
+        [elements/message-component @message @shake-message? @shake-angry?] 
         [elements/spawn-words-button]
         (when @game-started 
           [:div {:class "main-container-style"}

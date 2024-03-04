@@ -1,4 +1,4 @@
-/* some css style */
+/* some unsorted css style */
 
 .main-style {
     padding: 20px;
@@ -119,6 +119,33 @@
   }
   .shake-angry {
     animation: angry-shake 0.5s;
+  }
+
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 0;
+    }
+  }
+  
+  .message-animation {
+    animation: slide-in 0.5s ease-out, fade-out 1s ease-in 2.5s forwards;
+    will-change: transform, opacity;
   }
 
 /* cool button styles */
